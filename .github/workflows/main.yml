@@ -26,7 +26,9 @@ jobs:
           java-version: 17
 
       - name: Install project dependencies
-        run: npm install
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
       - name: Install Capacitor
         run: npm install @capacitor/core @capacitor/android
