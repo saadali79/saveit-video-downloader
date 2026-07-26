@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:      # Actions tab se manually "Run workflow" bhi kar sakte ho
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java (Gradle ke liye zaroori)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Install Capacitor
+        run: npm install @capacitor/core @capacitor/android
+
+      - name: Build web app (dist folder banega)
+        run: npm run build
+
+      - name: Init Capacitor (agar config nahi hai to banayega)
+        run: |
+          if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
+            npx cap init "SaveIt" "com.saadali79.saveit" --web-dir=dist
+          fi
+
+      - name: Add Android platform (agar pehle se nahi hai)
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap copy android
+          fi
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: saveit-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
